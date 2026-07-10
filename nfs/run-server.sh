@@ -6,10 +6,17 @@ CONFIG_FILE="$SCRIPT_DIR/../config.yaml"
 
 PREFIX=$(yq '.provider.domain_prefix' "$CONFIG_FILE")
 MGMT_IP=$(yq '.networks.mgmt.bridge_ip' "$CONFIG_FILE")
+BIND_ALL=$(yq '.nfs.bind_all // false' "$CONFIG_FILE")
 
 CONTAINER_NAME="${PREFIX}-nfs-server"
 IMAGE_NAME="${PREFIX}-nfs-server"
 PORT="${PORT:-2049}"
+
+if [ "$BIND_ALL" = "true" ]; then
+  BIND_IP="0.0.0.0"
+else
+  BIND_IP="$MGMT_IP"
+fi
 
 # Stop and remove existing container if running
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -33,7 +40,7 @@ echo "Starting NFS server on port $PORT..."
 docker run -d \
   --name "$CONTAINER_NAME" \
   --cap-add DAC_READ_SEARCH \
-  -p "$PORT:2049" \
+  -p "$BIND_IP:$PORT:2049" \
   -v "$SCRIPT_DIR/backup_target:/backup_target" \
   --restart unless-stopped \
   "$IMAGE_NAME"

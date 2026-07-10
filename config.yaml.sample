@@ -33,6 +33,14 @@ artifacts:
     - name: openSUSE-Leap-15.6.x86_64-NoCloud.qcow2
       url: https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.6/images/openSUSE-Leap-15.6.x86_64-NoCloud.qcow2
 ##############################################################################
+# NFS
+##############################################################################
+nfs:
+  # true: bind on all host interfaces.
+  # false: bind on mgmt bridge only, which requires the cluster to be provisioned
+  #        first to bring up the bridge.
+  bind_all: false
+##############################################################################
 # Provider configuration
 ##############################################################################
 provider:
