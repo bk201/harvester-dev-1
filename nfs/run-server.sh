@@ -6,6 +6,7 @@ CONFIG_FILE="$SCRIPT_DIR/../config.yaml"
 
 PREFIX=$(yq '.provider.domain_prefix' "$CONFIG_FILE")
 MGMT_IP=$(yq '.networks.mgmt.bridge_ip' "$CONFIG_FILE")
+MOUNT_DIR=$(yq '.nfs.mount_dir // ""' "$CONFIG_FILE")
 
 CONTAINER_NAME="${PREFIX}-nfs-server"
 IMAGE_NAME="${PREFIX}-nfs-server"
@@ -25,8 +26,13 @@ export DOCKER_BUILDKIT=1
 echo "Building Docker image..."
 docker build -t "$IMAGE_NAME" "$SCRIPT_DIR"
 
-# in case empty
-mkdir -p "$SCRIPT_DIR/backup_target"
+# bind-mount a host dir only if .nfs.mount_dir is configured; otherwise data
+# stays in the container's own storage
+VOLUME_ARGS=()
+if [[ -n "$MOUNT_DIR" ]]; then
+  mkdir -p "$MOUNT_DIR"
+  VOLUME_ARGS=(-v "$MOUNT_DIR:/backup_target")
+fi
 
 # DAC_READ_SEARCH is required by ganesha's VFS FSAL (open_by_handle_at)
 echo "Starting NFS server on port $PORT..."
@@ -34,7 +40,7 @@ docker run -d \
   --name "$CONTAINER_NAME" \
   --cap-add DAC_READ_SEARCH \
   -p "$PORT:2049" \
-  -v "$SCRIPT_DIR/backup_target:/backup_target" \
+  "${VOLUME_ARGS[@]}" \
   --restart unless-stopped \
   "$IMAGE_NAME"
 
