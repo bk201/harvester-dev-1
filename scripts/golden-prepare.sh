@@ -76,4 +76,4 @@ if ! is_valid "$GOLDEN_DIR"; then
 fi
 
 task op:nodes-destroy
-task op:nodes-golden-restore-and-boot -- ${VERSION}
+task op:nodes-golden-boot -- ${VERSION}

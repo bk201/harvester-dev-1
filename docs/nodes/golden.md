@@ -35,7 +35,7 @@ Run the following command to restore a golden image. The cluster will be booted 
 
 ```bash
 task op:nodes-destroy
-task op:nodes-golden-restore-and-boot -- VERSION
+task op:nodes-golden-boot -- VERSION
 ```
 
 ## Clean a golden image

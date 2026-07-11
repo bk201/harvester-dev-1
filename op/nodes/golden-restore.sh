@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# boot-from-golden.sh
+# golden-restore.sh
 # Recreate fresh overlays on top of the read-only golden masters (at the same
-# disk paths the domain XML already references), start the cluster, and wait
-# until it is ready. Exits 0 when ready, 1 on timeout — suitable for CI gating.
+# disk paths the domain XML already references)
 set -euo pipefail
-SCRIPT_NAME=boot-from-golden
+SCRIPT_NAME=golden-restore
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/../lib.sh"
 source "$SCRIPT_DIR/../config.sh"

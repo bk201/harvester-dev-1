@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# clean-golden.sh
+# golden-clean.sh
 # Remove the golden master directory. Best-effort: missing dir is not an error.
 # Golden masters are created as root (read-only), so fall back to sudo if a
 # plain rm is denied.
 set -euo pipefail
-SCRIPT_NAME=clean-golden
+SCRIPT_NAME=golden-clean
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/../lib.sh"
 source "$SCRIPT_DIR/../config.sh"

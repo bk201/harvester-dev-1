@@ -184,8 +184,8 @@ tasks:
     desc: 'Create a golden image from the current node disk state (usage: task op:nodes-golden-create -- <version>)'
     cmds:
       - ./nodes/golden-create.sh {{.CLI_ARGS}}
-  nodes-golden-restore-and-boot:
-    desc: 'Boot the nodes from a previously created golden image (usage: task op:nodes-golden-restore-and-boot -- <version>)'
+  nodes-golden-boot:
+    desc: 'Boot the nodes from a previously created golden image (usage: task op:nodes-golden-boot -- <version>)'
     cmds:
       - ./nodes/golden-restore.sh {{.CLI_ARGS}}
       - task: nodes-install

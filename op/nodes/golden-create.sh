@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# create-golden.sh
+# golden-create.sh
 # Capture the current cluster state as read-only golden masters.
 # Run this once whenever you want to freeze a freshly-built cluster
 # (e.g. once per day in the build phase). Whatever state the cluster is
 # in *now* is what gets frozen.
 set -euo pipefail
-SCRIPT_NAME=create-golden
+SCRIPT_NAME=golden-create
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/../lib.sh"
 source "$SCRIPT_DIR/../config.sh"
