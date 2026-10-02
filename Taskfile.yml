@@ -31,6 +31,15 @@ tasks:
     cmds:
       - ./scripts/download-images.sh
       - ls -alh {{.ROOT_DIR}}/artifacts/images
+  networks-up:
+    desc: Bootstrap networks before starting the local artifact server
+    deps: [init]
+    cmds:
+      - >-
+        terraform -chdir={{.TF_DIR}} apply --auto-approve
+        -target=libvirt_network.hvst_libvirt
+        -target=libvirt_network.hvst_mgmt
+        -target=libvirt_network.hvst_data
   artifacts-up:
     desc: Build and run the artifacts server container
     cmds:

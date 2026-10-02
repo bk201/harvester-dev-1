@@ -9,6 +9,9 @@
 # Release server configuration
 ##############################################################################
 harvester_release_url: https://releases.rancher.com/harvester
+# Local server binds only to this IPv4 address and port (HTTP; default port 80).
+# Use this deployment's management bridge IP; run task networks-up first.
+# After changing this URL, update artifact URLs below and restart artifacts-up.
 artifact_server_url: http://10.0.10.1:8787
 harvester_version: harvester-master
 harvester_iso_url: http://10.0.10.1:8787/isos/harvester-master/harvester-master-amd64.iso
@@ -39,6 +42,7 @@ provider:
   libvirt:
     # uri: qemu:///system
     uri: "qemu:///system?socket=/var/run/libvirt/virtqemud-sock"
+  # Must be unique for each deployment on the host, as must network bridge names.
   domain_prefix: hvst
 token: my-token
 ##############################################################################

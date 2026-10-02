@@ -138,15 +138,12 @@ git clone https://github.com/harvester/harvester-dev
 cd harvester-dev
 ```
 
-### 4. Configure and start the artifact server
+### 4. Configure and download images
 
 ```bash
 cp config.yaml.sample config.yaml
 task download-images
-task artifacts-up
 ```
-
-The artifact server (nginx) serves `./artifacts/isos` and `./artifacts/images`.
 
 ### 5. Plan networks
 
@@ -172,7 +169,42 @@ task plan-networks -- --nat hvst-libvirt,192.168.123.0/24 --mgmt hvst-mgmt,10.0.
 
 Only `*.0/24` subnets are supported. For finer control, edit `config.yaml` directly.
 
-### 6. Bring up the cluster
+For multiple deployments on one host, use a unique `provider.domain_prefix`,
+unique bridge names, and nonoverlapping subnets for each deployment. Run network
+planning before starting the artifact server; it updates the management IP in
+artifact URLs while preserving their ports.
+
+### 6. Bootstrap networks and start the artifact server
+
+```bash
+task networks-up
+task artifacts-up
+```
+
+`networks-up` initializes Terraform and keys, then applies only the three libvirt
+networks. This targeted apply is for bootstrapping; `task up` later applies the
+full configuration. `artifacts-up` requires its configured IP to exist already
+and does not provision infrastructure.
+
+The artifact server (nginx) serves `./artifacts/isos` and `./artifacts/images`.
+It binds to the IPv4 address and port in `artifact_server_url`, normally the
+deployment's management bridge IP. For example, two deployments can use
+`http://10.0.10.1:8787` and `http://10.0.20.1:8787` on the same host.
+The local server supports HTTP only, with port 80 when omitted, and no URL path
+other than `/`. Python 3 and the `ip` command are required to validate the address.
+
+To use a different port, edit `artifact_server_url` and update existing artifact
+URLs (or rerun the relevant ISO selectors). `PORT` is accepted only when it
+matches the URL's port. There is no separate `artifact_server_port` setting.
+After changing the address or port, rerun `task artifacts-up` and apply any
+updated provisioning configuration before installing nodes.
+
+For existing deployments, rerun `task artifacts-up` in each checkout to replace
+containers that publish on all host interfaces before starting additional
+deployments. The script replaces only the container named for that deployment's
+prefix. When using external artifact hosting, skip local artifact startup.
+
+### 7. Bring up the cluster
 
 Download a Harvester ISO:
 
