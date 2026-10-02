@@ -138,15 +138,16 @@ git clone https://github.com/harvester/harvester-dev
 cd harvester-dev
 ```
 
-### 4. Configure and start the artifact server
+### 4. Configure and download images
 
 ```bash
 cp config.yaml.sample config.yaml
 task download-images
-task artifacts-up
 ```
 
 The artifact server (nginx) serves `./artifacts/isos` and `./artifacts/images`.
+It starts automatically during `task build` (also called by `task up`), after
+Terraform creates the management bridge, and binds only to `.networks.mgmt.bridge_ip`.
 
 ### 5. Plan networks
 
@@ -231,7 +232,16 @@ task op:admin-disable-egress  # disable forwarding
 task clean
 ```
 
-Destroys and undefines all libvirt domains, volumes, and networks.
+Removes the artifacts server container and destroys and undefines all libvirt
+domains, volumes, and networks. Downloaded ISOs and images are kept.
+
+To remove only the artifacts server container:
+
+```bash
+task artifacts-down
+```
+
+Use `task artifacts-up` to rebuild and start it again while the management bridge exists.
 
 ## More
 
