@@ -36,6 +36,7 @@ locals {
       mode     = idx == 0 ? "create" : "join"
       token    = local.config.token
       hostname = "node${idx + 1}"
+      admin_ip = local.admin_ip
       hwaddr   = node.interfaces[0].mac
       iso_url  = local.config.harvester_iso_url
       vip      = local.config.vip
