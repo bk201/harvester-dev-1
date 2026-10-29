@@ -11,6 +11,8 @@ os:
     sftp: true
 %{ endif ~}
   hostname: ${hostname}
+  ntp_servers:
+    - ${admin_ip}
   ssh_authorized_keys:
 %{ for key in ssh_keys ~}
     - ${key}

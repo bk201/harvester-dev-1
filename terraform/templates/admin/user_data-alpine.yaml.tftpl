@@ -18,6 +18,19 @@ write_files:
     permissions: "0644"
     content: |
       ${replace(dnsmasq_config, "\n", "\n      ")}
+  - path: /etc/chrony/chrony.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      # Upstream is used only when egress is enabled.
+      pool pool.ntp.org iburst
+      driftfile /var/lib/chrony/chrony.drift
+      makestep 1.0 3
+      # Serve time to Harvester nodes even when unsynchronized (air-gapped).
+      local stratum 10
+%{ for iface in admin_interfaces ~}
+      allow ${cidrsubnet(iface.ip, 0, 0)}
+%{ endfor ~}
   - path: /etc/nginx/http.d/harvester.conf
     owner: root:root
     permissions: "0644"
@@ -44,9 +57,6 @@ write_files:
       ${replace(harvester_node_configs[node.name], "\n", "\n      ")}
 %{ endfor ~}
 
-bootcmd:
-  - rc-update del chronyd || true
-
 runcmd:
   # cloud-init runcmd already executes as root; no doas prefix needed
   # NOTE: If you are using image from https://github.com/bk201/alpine-cloud-images
@@ -60,5 +70,6 @@ runcmd:
   - rc-update add dnsmasq default && rc-service dnsmasq start
   - rm -f /etc/nginx/http.d/default.conf
   - rc-update add nginx default && rc-service nginx start
+  - rc-update add chronyd default && rc-service chronyd restart
   # - rc-update add qemu-guest-agent default
   # - rc-service qemu-guest-agent start
