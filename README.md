@@ -212,9 +212,11 @@ task up
 > ```
 > This enables egress on the admin node, so the environment is no longer air-gapped.
 >
+> `task select-install-remote-iso -- VERSION` sets these fields to a release server.
+>
 > To keep the environment air-gapped, leave the artifact server enabled and
 > point these fields at its [proxy paths](docs/artifact-server.md#proxy)
-> instead, e.g. `http://10.0.10.1:8787/proxy/10.10.0.100/harvester.iso`.
+> instead, e.g. `task select-install-remote-iso -- --proxy VERSION`.
 
 ## Usage
 
