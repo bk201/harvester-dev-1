@@ -17,6 +17,7 @@ import (
 	"go.yaml.in/yaml/v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/pkg/env"
@@ -143,6 +144,26 @@ func TestMain(m *testing.M) {
 	os.Exit(testenv.Run(m))
 }
 
+// retryOnAPIError keeps polling when an API call fails because the connection
+// to the API server broke, which can happen while the cluster settles (e.g.
+// "http2: client connection lost"). Any other error is returned and stops the
+// wait. The surrounding wait timeout still bounds the retries.
+func retryOnAPIError(t *testing.T, what string, err error) (bool, error) {
+	if !isConnectionError(err) {
+		return false, err
+	}
+	t.Logf("fail to list %s, connection error (will retry): %v", what, err)
+	return false, nil
+}
+
+func isConnectionError(err error) bool {
+	return utilnet.IsConnectionRefused(err) ||
+		utilnet.IsConnectionReset(err) ||
+		utilnet.IsHTTP2ConnectionLost(err) ||
+		utilnet.IsProbableEOF(err) ||
+		utilnet.IsTimeout(err)
+}
+
 // waitVIPReady checks that the cluster VIP is responding
 func waitVIPReady(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	if clusterConfig.VIP == "" {
@@ -197,7 +218,7 @@ func waitNodesReady(ctx context.Context, t *testing.T, cfg *envconf.Config) cont
 		var nodeList corev1.NodeList
 		err := r.List(ctx, &nodeList)
 		if err != nil {
-			return false, err
+			return retryOnAPIError(t, "nodes", err)
 		}
 
 		// Check node count
@@ -306,7 +327,7 @@ func waitDeploymentsReady(ctx context.Context, t *testing.T, cfg *envconf.Config
 		var deploymentList appsv1.DeploymentList
 		err := r.List(ctx, &deploymentList)
 		if err != nil {
-			return false, err
+			return retryOnAPIError(t, "deployments", err)
 		}
 
 		foundSet := make(map[string]bool)
@@ -396,7 +417,7 @@ func waitDaemonSetsReady(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		var daemonSetList appsv1.DaemonSetList
 		err := r.List(ctx, &daemonSetList)
 		if err != nil {
-			return false, err
+			return retryOnAPIError(t, "daemonsets", err)
 		}
 
 		foundSet := make(map[string]bool)
@@ -492,7 +513,7 @@ func managedChartsReady(ctx context.Context, t *testing.T, cfg *envconf.Config, 
 	var managedCharts rancherv3.ManagedChartList
 	err := cfg.Client().Resources().List(ctx, &managedCharts)
 	if err != nil {
-		return false, err
+		return retryOnAPIError(t, "managed charts", err)
 	}
 
 	foundSet := make(map[string]bool)
@@ -545,7 +566,7 @@ func waitKubeVirtsReady(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 		var kubevirtList kubevirtv1.KubeVirtList
 		err := cfg.Client().Resources().List(ctx, &kubevirtList)
 		if err != nil {
-			return false, err
+			return retryOnAPIError(t, "KubeVirt resources", err)
 		}
 
 		foundSet := make(map[string]bool)
