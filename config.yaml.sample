@@ -189,6 +189,9 @@ nodes:
 node_hacks:
   # https://github.com/harvester/harvester/issues/11122
   ensure_vip_stable: false
+  # Restart fleet-agent during `task test-cluster-ready` when a bundle stays
+  # NotReady although its resources are ready (drift watch stuck on 410 Expired).
+  restart_stale_fleet_agent: false
 ##############################################################################
 # Harvester cluster
 ##############################################################################

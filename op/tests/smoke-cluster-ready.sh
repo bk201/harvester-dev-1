@@ -68,6 +68,13 @@ yq -i ".etcdCount = $ETCD_COUNT" "$cluster_config"
 
 echo "Updated cluster config with: VIP=$VIP, nodeCount=$NODE_COUNT, controllerCount=$CONTROLLER_COUNT, etcdCount=$ETCD_COUNT"
 
+# Restart fleet-agent if its BundleDeployment status gets stuck after a cold start
+RESTART_STALE_FLEET_AGENT=$(yq '.node_hacks.restart_stale_fleet_agent // false' "$CONFIG")
+if [[ "$RESTART_STALE_FLEET_AGENT" == "true" ]]; then
+  yq -i ".workarounds.restartStaleFleetAgent = true" "$cluster_config"
+  echo "Enabled workaround: restartStaleFleetAgent"
+fi
+
 # Run the smoke test
 echo "Running smoke test to verify the cluster is ready..."
 set -x

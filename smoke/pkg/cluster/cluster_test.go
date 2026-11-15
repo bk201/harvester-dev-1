@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	fleetv1 "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
 	rancherv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/sirupsen/logrus"
 	"go.yaml.in/yaml/v3"
@@ -92,6 +93,7 @@ func loadClusterConfig() error {
 		clusterConfig.NodeCount, clusterConfig.ControllerCount, clusterConfig.EtcdCount)
 	logrus.Infof("Expected deployments: %d, daemonsets: %d, managedcharts: %d, kubevirts: %d",
 		len(clusterConfig.ExpectedDeployments), len(clusterConfig.ExpectedDaemonSets), len(clusterConfig.ExpectedManagedCharts), len(clusterConfig.ExpectedKubeVirts))
+	logrus.Infof("Workarounds: restartStaleFleetAgent=%t", clusterConfig.Workarounds.RestartStaleFleetAgent)
 
 	return nil
 }
@@ -129,6 +131,12 @@ func TestMain(m *testing.M) {
 	err = kubevirtv1.AddToScheme(r.GetScheme())
 	if err != nil {
 		fmt.Println("fail to add kubevirt scheme:", err)
+		os.Exit(1)
+	}
+
+	err = fleetv1.AddToScheme(r.GetScheme())
+	if err != nil {
+		fmt.Println("fail to add fleet scheme:", err)
 		os.Exit(1)
 	}
 
@@ -454,55 +462,74 @@ func waitManagedChartsReady(ctx context.Context, t *testing.T, cfg *envconf.Conf
 		expectedSet[key] = true
 	}
 
+	timeout := 5 * time.Minute
+	var fleetWorkaround *staleFleetAgentWorkaround
+	if clusterConfig.Workarounds.RestartStaleFleetAgent {
+		fleetWorkaround = &staleFleetAgentWorkaround{}
+		// leave room for the stale status grace period and agent restarts
+		timeout = 10 * time.Minute
+	}
+
 	err := wait.For(func(ctx context.Context) (bool, error) {
-		var managedCharts rancherv3.ManagedChartList
-		err := cfg.Client().Resources().List(ctx, &managedCharts)
-		if err != nil {
-			return false, err
+		ready, err := managedChartsReady(ctx, t, cfg, expectedSet)
+		if err != nil || ready {
+			return ready, err
 		}
-
-		foundSet := make(map[string]bool)
-
-		for _, chart := range managedCharts.Items {
-			chartKey := fmt.Sprintf("%s/%s", chart.Namespace, chart.Name)
-			foundSet[chartKey] = true
-
-			// Skip if this chart is not in our expected list
-			if !expectedSet[chartKey] {
-				continue
-			}
-
-			ready := rancherv3.Ready.IsTrue(&chart)
-			if !ready {
-				t.Logf("ManagedChart %s is not ready", chartKey)
-				return false, nil
-			}
+		if fleetWorkaround != nil {
+			fleetWorkaround.check(ctx, t, cfg)
 		}
-
-		// Warn about unexpected managed charts
-		for key := range foundSet {
-			if !expectedSet[key] {
-				t.Logf("WARNING: Unexpected managed chart found: %s", key)
-			}
-		}
-
-		// Check for missing expected charts
-		for key := range expectedSet {
-			if !foundSet[key] {
-				t.Logf("Expected managed chart %s not found", key)
-				return false, nil
-			}
-		}
-
-		t.Logf("All %d expected managed charts are ready", len(clusterConfig.ExpectedManagedCharts))
-		return true, nil
-	}, wait.WithImmediate(), wait.WithInterval(30*time.Second), wait.WithTimeout(5*time.Minute))
+		return false, nil
+	}, wait.WithImmediate(), wait.WithInterval(30*time.Second), wait.WithTimeout(timeout))
 
 	if err != nil {
 		t.Fatalf("Failed waiting for managed charts to be ready: %v", err)
 	}
 
 	return ctx
+}
+
+func managedChartsReady(ctx context.Context, t *testing.T, cfg *envconf.Config, expectedSet map[string]bool) (bool, error) {
+	var managedCharts rancherv3.ManagedChartList
+	err := cfg.Client().Resources().List(ctx, &managedCharts)
+	if err != nil {
+		return false, err
+	}
+
+	foundSet := make(map[string]bool)
+
+	for _, chart := range managedCharts.Items {
+		chartKey := fmt.Sprintf("%s/%s", chart.Namespace, chart.Name)
+		foundSet[chartKey] = true
+
+		// Skip if this chart is not in our expected list
+		if !expectedSet[chartKey] {
+			continue
+		}
+
+		ready := rancherv3.Ready.IsTrue(&chart)
+		if !ready {
+			t.Logf("ManagedChart %s is not ready", chartKey)
+			return false, nil
+		}
+	}
+
+	// Warn about unexpected managed charts
+	for key := range foundSet {
+		if !expectedSet[key] {
+			t.Logf("WARNING: Unexpected managed chart found: %s", key)
+		}
+	}
+
+	// Check for missing expected charts
+	for key := range expectedSet {
+		if !foundSet[key] {
+			t.Logf("Expected managed chart %s not found", key)
+			return false, nil
+		}
+	}
+
+	t.Logf("All %d expected managed charts are ready", len(clusterConfig.ExpectedManagedCharts))
+	return true, nil
 }
 
 // waitKubeVirtsReady checks that all KubeVirt resources are ready

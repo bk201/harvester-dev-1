@@ -33,6 +33,17 @@ type ClusterConfig struct {
 
 	// Expected KubeVirt resources to verify (format: "namespace/name") - will warn about unexpected ones
 	ExpectedKubeVirts []string `yaml:"expectedKubeVirts,omitempty"`
+
+	// Workarounds for known issues, applied while waiting for the cluster to be ready
+	Workarounds Workarounds `yaml:"workarounds,omitempty"`
+}
+
+// Workarounds toggles workarounds for known issues
+type Workarounds struct {
+	// RestartStaleFleetAgent restarts fleet-agent when a BundleDeployment status is
+	// stale (NotReady although its resources are ready) because the agent's drift
+	// watchers are stuck on "410 Expired".
+	RestartStaleFleetAgent bool `yaml:"restartStaleFleetAgent,omitempty"`
 }
 
 // DefaultClusterConfig returns a ClusterConfig with default expected resource names

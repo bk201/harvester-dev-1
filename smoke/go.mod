@@ -17,6 +17,7 @@ replace (
 
 require (
 	github.com/harvester/harvester v0.0.2-0.20241101094502-82922af2cd42
+	github.com/rancher/fleet/pkg/apis v0.10.0
 	github.com/rancher/rancher/pkg/apis v0.0.0
 	github.com/rancher/wrangler/v3 v3.0.0
 	github.com/sirupsen/logrus v1.9.3
@@ -67,7 +68,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rancher/aks-operator v1.9.2 // indirect
 	github.com/rancher/eks-operator v1.9.2 // indirect
-	github.com/rancher/fleet/pkg/apis v0.10.0 // indirect
 	github.com/rancher/gke-operator v1.9.2 // indirect
 	github.com/rancher/lasso v0.0.0-20240705194423-b2a060d103c1 // indirect
 	github.com/rancher/norman v0.0.0-20240708202514-a0127673d1b9 // indirect
